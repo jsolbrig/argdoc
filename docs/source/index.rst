@@ -93,6 +93,44 @@ arguments and keywords with the instance.  Then, simply decorate an object with 
     def somefunction(arg1, arg2, kw1='Test', kw2=False):
         pass
 
+Example
+=======
+
+Below is an example of using this package to decorate a few different functions.
+While this is only shown for individual functions, class methods (including
+special methods) and classes themselves can also be decorated.
+
+.. literalinclude:: ../../example.py
+    :language: python
+
+.. program-output:: python ../../example.py
+
+.. Next, :py:function:`.test_function` can be imported and its docstring printed to show the effect
+.. of decorating the function.
+.. 
+.. .. code-block:: python
+.. 
+..     In [1]: from example import test_function
+..     Cannot re-register `arg1`
+.. 
+..     In [2]: print(test_function.__doc__)
+..     This function does nothing.
+.. 
+..     Arguments
+..     ----------
+..     arg1 : str
+..         The first test argument
+..     arg2 : list of str
+..         The second test argument
+.. 
+.. 
+..     Keyword Arguments
+..     -----------------
+..     kw1 : str, optional
+..         The first keyword argument Default: Test1
+..     kw2 : str, optional
+..         The second keyword argument Default: Test2
+
 API
 ===
 
