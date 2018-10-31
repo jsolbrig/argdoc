@@ -20,6 +20,10 @@ class ArgDoc(object):
         self.keywords = {}
 
     def __call__(self, obj):
+        '''
+        Inspect the input object and add a "parameters" section to its docstring
+        based on its argspec.
+        '''
         if hasattr(obj, '__doc__'):
             if isclass(obj):
                 args, vargs, kwargs, defaults = getargspec(obj.__init__)
@@ -92,11 +96,11 @@ class ArgDoc(object):
         '''
         self.__register_param(name, typ, desc, force=force, keyword=False)
 
-    def register_keyword(self, argname, argtype, argdesc, argdefault=None, force=False):
+    def register_keyword(self, name, typ, desc, default=None, force=False):
         '''
         Register a keyword with a type and description
         '''
-        self.__register_param(argname, argtype, argdesc, force=force, keyword=True)
+        self.__register_param(name, typ, desc, force=force, keyword=True)
 
 
     def create_numpy_format_argument(self, name, info):
