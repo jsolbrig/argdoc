@@ -15,7 +15,13 @@ Numpy format.
 Installation
 ============
 
+Clone the repo and install using setup.py:
 
+.. code-block:: bash
+
+    git clone https://github.com/jsolbrig/argdoc.git
+    cd argdoc
+    python setup.py install
 
 Usage
 =====
