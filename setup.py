@@ -21,6 +21,7 @@ setup(name=name,
               'project': ('setup.py', name),
               'version': ('setup.py', version),
               'release': ('setup.py', release),
-              'source_dir': ('setup.py', 'doc')}}
+              'source_dir': ('setup.py', 'doc')}},
+      install_requires=['sphinxcontrib-programoutput
      )
 
