@@ -1,6 +1,10 @@
+from __future__ import division, print_function, unicode_literals
 from inspect import getargspec, isclass
 
-class ArgDoc(object):
+__metaclass__ == type
+
+
+class ArgDoc():
     '''
     This decorator inspects the argspec of a decorated function, method, or class and
     adds a Numpy formatted paramter list to the docstring of that object.  This is
