@@ -1,0 +1,13 @@
+conf.py
+Added two new sphinx extensions
+
+argdoc.py
+Changed "argument(s)" to "positional"
+Added quite a bit of documentation
+Added __ to formatters
+
+index.rst
+Added literalinclude for code example
+
+example.py
+Added an example script

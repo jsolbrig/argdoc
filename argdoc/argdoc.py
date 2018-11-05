@@ -1,7 +1,8 @@
 from __future__ import division, print_function, unicode_literals
+import pkg_resources
 from inspect import getargspec, isclass
 
-__metaclass__ == type
+__metaclass__ = type
 
 
 class ArgDoc():
