@@ -16,14 +16,14 @@ Installation
 ============
 
 Via PIP
-=======
+-------
 
 .. code-block:: bash
 
     pip install argdoc
 
 From Source
-===========
+-----------
 
 Clone the repo and install using setup.py:
 
