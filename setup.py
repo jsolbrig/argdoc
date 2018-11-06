@@ -4,14 +4,14 @@ from setuptools import setup
 from distutils.util import convert_path
 from sphinx.setup_command import BuildDoc
 
+name = 'ArgDoc'
+
 main_ns = {}
 ver_path = convert_path('argdoc/version.py')
 with open(ver_path) as ver_file:
     exec(ver_file.read(), main_ns)
 
 cmdclass = {'build_sphinx': BuildDoc}
-
-name = 'ArgDoc'
 
 with open('README.md', 'r') as rm:
     long_description = rm.read()
@@ -23,7 +23,7 @@ setup(name=name,
       description='A package for reducing copy/paste of argument descriptions in docstrings',
       long_description=long_description,
       long_description_content_type="text/markdown",
-      py_modules=['argdoc'],
+      packages=['argdoc'],
       cmdclass=cmdclass,
       command_options={
           'build_sphinx': {
