@@ -18,7 +18,9 @@ Installation
 Via PIP
 =======
 
-`pip install argdoc`
+.. code-block:: bash
+
+    pip install argdoc
 
 From Source
 ===========
