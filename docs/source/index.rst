@@ -15,6 +15,14 @@ Numpy format.
 Installation
 ============
 
+Via PIP
+=======
+
+`pip install argdoc`
+
+From Source
+===========
+
 Clone the repo and install using setup.py:
 
 .. code-block:: bash
