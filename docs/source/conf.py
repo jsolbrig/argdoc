@@ -16,6 +16,9 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+def _GetVersion():
+    import pkg_resources
+    return pkg_resources.get_distribution("argdoc").version
 
 # -- Project information -----------------------------------------------------
 
@@ -24,9 +27,9 @@ copyright = u'2018, Jeremy Solbrig'
 author = u'Jeremy Solbrig'
 
 # The short X.Y version
-version = u''
+version = _GetVersion()
 # The full version, including alpha/beta/rc tags
-release = u'0.1.0'
+release = _GetVersion()
 
 
 # -- General configuration ---------------------------------------------------
