@@ -1,6 +1,7 @@
 1.2 2018-11-05
 ==============
 
+- First release to PYPI
 - Reworked package organization
 - Added versioning
 - Completed setup.py
