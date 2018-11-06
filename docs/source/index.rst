@@ -50,7 +50,7 @@ argument or keyword that has not been registered with the :py:class:`.ArgDoc` in
 is encountered in a decorated object's argspec a :py:class:`KeyError` will be raised.
 
 Registering a Positional Argument
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 Positional arguments can be registered by calling :py:meth:`.ArgDoc.register_argument`
 on an instantiated :py:class:`.ArgDoc` instance.  For example, the code below shows how
@@ -73,7 +73,7 @@ while, if anything else is passed, its `__str__` representation will be used.
 .. note:: Maybe this is not the appropriate behavior here.  Think about it...
 
 Registering a Keyword Argument
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------
 
 Keyword arguments can be registered by calling :py:meth:`.ArgDoc.register_keyword`
 on an instantiated :py:class:`.ArgDoc` instance.  This is the same process as for
