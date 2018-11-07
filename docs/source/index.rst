@@ -204,7 +204,7 @@ arguments produces an appropriate docstring:
     Keyword Arguments
     -----------------
     no_def_kw : int, optional
-        Keyword that gathers default from argspec Default: None
+        Keyword that gathers default from argspec Default: 100
 
 Unregistered Arguments
 ----------------------
@@ -333,6 +333,26 @@ via the `raises` argument:
     ------
     KeyError
         Raises a KeyError under all circumstances.
+
+Known Issues
+============
+
+- Currently unable to wrap classmethods.
+- Wrapping staticmethods must be done in the correct order.
+- Currently unable to wrap classes.  Please wrap their __init__ and __new__ methods instead.
+
+Documentation Needed
+====================
+
+- Handling of \*args and \*\*kwargs
+- Google-style docstrings (Current documentation only covers numpy-style)
+
+Todo
+====
+
+- In general, further testing is needed
+    - Extensive error testing (e.g. what happens when we call the class directly on a non-existing function?)
+- Need to figure out ways to handle returns, yields, etc
 
 API
 ===

@@ -1,12 +1,23 @@
 from __future__ import division, print_function, unicode_literals
+
+import sys
 import pkg_resources
-from inspect import getargspec, isclass
 try:
-    from inspect import signature
+    from inspect import signature, _empty, getdoc
+    from inspect import Parameter
 except ImportError:
-    from funcsig import signature
+    from funcsig import signature, _empty
+    from funcsig import Parameter
 
 from IPython import embed as shell
+
+POSITIONAL_ONLY = Parameter.POSITIONAL_ONLY
+POSITIONAL_OR_KEYWORD = Parameter.POSITIONAL_OR_KEYWORD
+VAR_POSITIONAL = Parameter.VAR_POSITIONAL
+KEYWORD_ONLY = Parameter.KEYWORD_ONLY
+VAR_KEYWORD = Parameter.VAR_KEYWORD
+
+POSITIONALS = [POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, VAR_POSITIONAL]
 
 __metaclass__ = type
 
@@ -25,7 +36,7 @@ class ArgDoc:
     At present, this only produces Numpy and Google style docstrings, but can easily be
     extended to output other docstring formats.
     '''
-    def __new__(cls, form='numpy', ignore_args=[], ignore_kws=[]):
+    def __new__(cls, form='numpy', ignore_args=[], ignore_kws=[], **kwargs):
         obj = super().__new__(cls)
         obj.form = form
         obj.ignore_args = ignore_args
@@ -60,66 +71,55 @@ class ArgDoc:
             based on its argspec.
             '''
             if hasattr(obj, '__doc__'):
-                if isclass(obj):
-                    args, vargs, kwargs, defaults = getargspec(obj.__init__)
-                else:
-                    args, vargs, kwargs, defaults = getargspec(obj)
-                if defaults:
-                    defaults = list(defaults)
-                else:
-                    defaults = []
-    
-                # Pop off the keyword arguments, get their descriptions, and associate with defaults
-                keywords = {}
-                while defaults:
-                    kw = args.pop()
-                    default = defaults.pop()
-    
-                    # If ignored, then skip
-                    if kw in self.ignore_kws:
-                        continue
-                    # Add to keywords to document
-                    try:
-                        keywords[kw] = self.keywords[kw]
-                    except KeyError:
-                        raise KeyError(
-                            'Unregistered keyword argument `{}` encountered in argspec of `{}`'.format(kw, obj))
-                    # Defer to the registered default
-                    if 'default' not in keywords[kw]:
-                        keywords[kw]['default'] = default
-    
-                # Pop off the positonal arguments and get their descriptions
-                arguments = {}
-                while args:
-                    arg = args.pop()
-    
-                    # If ignored, then skip
-                    if arg in self.ignore_args:
-                        continue
-                    try:
-                        arguments[arg] = self.arguments[arg]
-                    except KeyError:
-                        raise KeyError(
-                            'Unregistered positional argument `{}` encountered in argspec of `{}`'.format(arg, obj))
-    
-                # Construct the docstring
-                doc = obj.__doc__ if obj.__doc__ else ''
-                doc = doc.strip()
-                if arguments:
-                    doc += '\n\nArguments\n----------\n'
-                    for argname in sorted(arguments.keys()):
-                        arginfo = arguments[argname]
-                        doc += self.__create_numpy_format_argument(argname, arginfo)
-                if keywords:
-                    doc += '\n\nKeyword Arguments\n-----------------\n'
-                    for kwname in sorted(keywords.keys()):
-                        kwinfo = keywords[kwname]
-                        doc += self.__create_numpy_format_argument(kwname, kwinfo)
+                # Get the original docstring and signature
+                doc = getdoc(obj)
+                if not doc:
+                    doc = ''
+                sig = signature(obj)
+
+                # Add parameters
+                has_args = False
+                has_keywords = False
+                has_vargs = False
+                has_vkeywords = False
+                for param in sig.parameters.values():
+                    if param.kind in POSITIONALS and param.default is _empty:
+                        if param.name in self.ignore_args:
+                            continue
+                        if has_keywords:
+                            raise ValueError('Argument encountered after keyword')
+                        if has_vargs:
+                            raise ValueError('Argument encountered after vargs')
+                        if not has_args:
+                            has_args = True
+                            doc += self.__get_argument_header()
+                        if param.kind == VAR_POSITIONAL:
+                            has_vargs = True
+                            doc += self.__create_vargs_doc(param)
+                        else:
+                            doc += self.__create_argument_doc(param)
+                    else:
+                        if param.name in self.ignore_kws:
+                            continue
+                        if has_vargs:
+                            raise ValueError('Keyword encountered after vargs')
+                        if has_vkeywords:
+                            raise ValueError('Keyword encountered after vkeywords')
+                        if not has_keywords:
+                            has_keywords = True
+                            doc += self.__get_keyword_header()
+                        if param.kind == VAR_KEYWORD:
+                            has_vkeywords = True
+                            doc += self.__create_vkeywords_doc(param)
+                        else:
+                            doc += self.__create_keyword_doc(param)
+
+                # Add errors
                 if self.raises:
-                    doc += '\n\nRaises\n------\n'
-                    for errname in sorted(self.raises.keys()):
-                        errcond = self.raises[errname]
-                        doc += self.__create_numpy_format_error(errname, errcond)
+                    doc += self.__get_error_header()
+                    for ename, econd in self.raises.items():
+                        doc += self.__create_error_doc(ename, econd)
+
                 doc += '    \n'
     
             else:
@@ -127,26 +127,66 @@ class ArgDoc:
             obj.__doc__ = doc
             return obj
     
-        def __create_numpy_format_argument(self, name, info):
-            if 'default' in info:
+        def __get_argument_header(self):
+            if self.form == 'numpy':
+                return '\n\nArguments\n----------\n'
+            elif self.form == 'google':
+                return '\n\nArgs:\n'
+
+        def __get_keyword_header(self):
+            if self.form == 'numpy':
+                return '\n\nKeyword Arguments\n-----------------\n'
+            elif self.form == 'google':
+                return '\n\nKeywords:\n'
+
+        def __get_error_header(self):
+            if self.form == 'numpy':
+                return '\n\nRaises\n------\n'
+            elif self.form == 'google':
+                return '\n\nRaises:\n'
+
+        def __create_argument_doc(self, param):
+            info = self.arguments[param.name]
+            if self.form == 'numpy':
+                argstr = '{} : {}\n    {}\n'.format(param.name, info['type'], info['desc'])
+            elif self.form == 'google':
+                argstr = '    {} ({}): {}\n'.format(param.name, info['type'], info['desc'])
+            return argstr
+
+        def __create_keyword_doc(self, param):
+            info = self.keywords[param.name]
+            try:
+                default = info['default']
+            except KeyError:
+                default = param.default
+            if self.form == 'numpy':
                 argstr = '{} : {}, optional\n    {} Default: {}\n'.format(
-                    name, info['type'], info['desc'], info['default'])
-            else:
-                argstr = '{} : {}\n    {}\n'.format(name, info['type'], info['desc'])
+                    param.name, info['type'], info['desc'], default)
+            elif self.form == 'google':
+                argstr = '    {} ({}, optional): {}\n'.format(
+                    param.name, info['type'], info['desc'], default)
+            return argstr
+
+        def __create_vargs_doc(self, param):
+            if self.form == 'numpy':
+                argstr = '*{}\n    Variable length argument list.'.format(param.name)
+            elif self.form == 'google':
+                argstr = '    *{}: Variable length argument list.'.format(param.name)
             return argstr
     
-        def __create_numpy_format_error(self, name, condition):
-            return '{}\n    {}\n'.format(name, condition)
-    
-        def __create_google_format_argument(self, name, info):
-            if 'default' in info:
-                argstr = '{} ({}, optional): {}\n'.format(name, info['type'], info['default'])
-            else:
-                argstr = '{} ({}): {}\n'.format(name, info['type'], info['default'])
+        def __create_vkeywords_doc(self, param):
+            if self.form == 'numpy':
+                argstr = '**{}\n    Arbitrary keyword arguments.'.format(param.name)
+            elif self.form == 'google':
+                argstr = '    **{}: Arbitrary keyword arguments.'.format(param.name)
             return argstr
     
-        def __create_google_format_error(self, name, condition):
-            return '{}: {}\n'.format(name, condition)
+        def __create_error_doc(self, name, condition):
+            if self.form == 'numpy':
+                argstr = '{}\n    {}\n'.format(name, condition)
+            elif self.form == 'google':
+                argstr = '    {}: {}\n'.format(name, condition)
+            return argstr
 
     def __register_param(self, name, typ, desc, default=None, force=False, keyword=False):
         if keyword:
@@ -225,5 +265,5 @@ raises = {'KeyError': 'If an argument has already been registered under the same
 
 __arg_doc()(ArgDoc.__new__)
 __arg_doc()(ArgDoc.__call__)
-# __arg_doc(raises=raises)(ArgDoc.register_argument)
-# __arg_doc(raises=raises)(ArgDoc.register_keyword)
+__arg_doc(raises=raises)(ArgDoc.register_argument)
+__arg_doc(raises=raises)(ArgDoc.register_keyword)
