@@ -39,10 +39,8 @@ Usage
 To use :py:class:`.ArgDoc` as a decorator, it must first be imported within your source
 code and and an instance must be instantiated:
 
-.. code-block:: python
-
-    from argdoc import ArgDoc
-    arg_doc = ArgDoc()
+>>> from argdoc import ArgDoc
+>>> arg_doc = ArgDoc()
 
 Next, in order for the decorator to have any effect, positional arguments and
 keywords must be registered with the :py:class:`.ArgDoc` instance.  If a positional
@@ -54,92 +52,287 @@ Registering a Positional Argument
 
 Positional arguments can be registered by calling :py:meth:`.ArgDoc.register_argument`
 on an instantiated :py:class:`.ArgDoc` instance.  For example, the code below shows how
-to register an argument called `testarg` with type `str` and a description
-stating that it is `"A test argument"`.
+to register an argument called `arg1` with type `str` and a description
+stating that it is `"The first argument"`:
 
-.. code-block:: python
-
-    # Import and instantiate
-    from argdoc import ArgDoc
-    arg_doc = ArgDoc()
-
-    # An argument consists of a name, a type, and a description
-    arg_doc.register_argument('testarg', str, 'A test argument')
+>>> arg_doc.register_argument('arg1', str, 'The first argument')
+>>> print(arg_doc.arguments['arg1'])
+{'type': 'str', 'desc': 'The first argument'}
 
 Note that the `typ` argument to :py:meth:`.ArgDoc.register_argument` can be anything.
-If a `type` object is passed, `typ.__name__` will be used in the documentation
+If a :py:class:`type` object is passed, `typ.__name__` will be used in the documentation
 while, if anything else is passed, its `__str__` representation will be used.
+To register `arg2` whose type is a `"list of str"`:
+
+>>> arg_doc.register_argument('arg2', 'list of str', 'The second argument')
+>>> print(arg_doc.arguments['arg2'])
+{'type': 'list of str', 'desc': 'The second argument'}
 
 .. note:: Maybe this is not the appropriate behavior here.  Think about it...
+
+At this point, there are two registered positional arguments:
+
+.. testcode::
+
+    print(arg_doc.arguments)
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    {'arg1': {'type': 'str', 'desc': 'The first argument'},
+     'arg2': {'type': 'list of str', 'desc': 'The second argument'}}
 
 Registering a Keyword Argument
 ------------------------------
 
+Registering a keyword argument is similar to registering a positional argument.  To
+register a keyword argument, call :py:meth:`.ArgDoc.register_keyword`
 Keyword arguments can be registered by calling :py:meth:`.ArgDoc.register_keyword`
-on an instantiated :py:class:`.ArgDoc` instance.  This is the same process as for
-positional arguments, except that a default value can be provided.  When no
-default value is provided the default value is derived from the argspec.
-When a default value is provided, the default set in the argspec will be
-overridden with the input default value.
+on an instantiated :py:class:`.ArgDoc` instance.  To register a keyword with named
+`def_kw` with type `int`, the description `"Keyword with default"`, and a default
+of `1`:
 
-.. code-block:: python
+>>> arg_doc.register_keyword('def_kw', int, 'Keyword with default defined during registration', default=1)
+>>> print(arg_doc.keywords['def_kw'])
+{'type': 'int', 'desc': 'Keyword with default defined during registration', 'default': 1}
 
-    # Use the argspec's default value
-    arg_doc.register_keyword('testkw', bool, 'A test keyword that acts as a boolean flag')
+Providing a default value during registration is optional.  If a default value is
+provided, that default value will be used in the docstring for all decorated objects
+that include the named keyword in their argspec.  If, on the other hand, no default
+value is provided for a keyword that is found in a decorated object's argspec, the
+default value to use in the documentation will be extracted from the object's argspec
+for each decorated object:
 
-    # Set a new default value
-    arg_doc.register_keyword('overridden', str, 'A test string', default='Testing')
+>>> arg_doc.register_keyword('no_def_kw', int, 'Keyword that gathers default from argspec')
+>>> print(arg_doc.keywords['no_def_kw'])
+{'type': 'int', 'desc': 'Keyword that gathers default from argspec'}
 
-Decorating an object
-====================
+.. note:: Setting the default value of a keyword argument during registration does not impact
+          the code, only the documentation.  This functionality is provided to allow documentation
+          of keywords whose defaults are not set in the argspec and are, instead, set inside the
+          decorated callable.
 
-To decorate an object, create an instance of :py:class:`.ArgDoc` and register positional
-arguments and keywords with the instance.  Then, simply decorate an object with the
-:py:class:`.ArgDoc` instance like this:
+At this point, we have two registered keywords:
 
-.. code-block:: python
+.. testcode::
 
-    @dict_doc
-    def somefunction(arg1, arg2, kw1='Test', kw2=False):
+    print(arg_doc.keywords)
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    {'def_kw': {'type': 'int', 'desc': 'Keyword with default defined during registration', 'default': 1},
+     'no_def_kw': {'type': 'int', 'desc': 'Keyword that gathers default from argspec'}}
+
+Decorating a function
+---------------------
+
+To decorate a function, create an instance of :py:class:`.ArgDoc` and register positional
+arguments and keywords with the instance as shown above.  Then, simply decorate an object
+with the :py:class:`.ArgDoc` instance:
+
+.. testcode::
+
+    @arg_doc()
+    def test_func(arg1, arg2, def_kw=None, no_def_kw=None):
+        '''
+        This is a test function that does nothing
+        '''
+        pass
+    print(test_func.__doc__)
+
+Note that in the resulting docstring, the default for `def_kw` was defined during registration
+of the keyword argument while the default for `no_def_kw` is gathered from the argspec of
+the decorated function:
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    This is a test function that does nothing
+
+    Arguments
+    ----------
+    arg1 : str
+        The first argument
+    arg2 : list of str
+        The second argument
+
+
+    Keyword Arguments
+    -----------------
+    def_kw : int, optional
+        Keyword with default defined during registration Default: 1
+    no_def_kw : int, optional
+        Keyword that gathers default from argspec Default: None
+
+It is not necessary for a decorated function's argspec to contain all of the registered
+positional or keyword arguments.  Decorating a function with a subset of the registered
+arguments produces an appropriate docstring:
+
+.. testcode::
+
+    @arg_doc()
+    def single_argument(arg1):
+        '''
+        This function's argspec only contains `arg1`
+        '''
         pass
 
-Example
-=======
+    @arg_doc()
+    def single_keyword(no_def_kw=100):
+        '''
+        This function's argspec only contains `no_def_kw`
+        '''
+        pass
 
-Below is an example of using this package to decorate a few different functions.
-While this is only shown for individual functions, class methods (including
-special methods) and classes themselves can also be decorated.
+    print(single_argument.__doc__)
+    print(single_keyword.__doc__)
 
-.. literalinclude:: ../../example.py
-    :language: python
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
 
-.. program-output:: python ../../example.py
+    This function's argspec only contains `arg1`
 
-.. Next, :py:function:`.test_function` can be imported and its docstring printed to show the effect
-.. of decorating the function.
-.. 
-.. .. code-block:: python
-.. 
-..     In [1]: from example import test_function
-..     Cannot re-register `arg1`
-.. 
-..     In [2]: print(test_function.__doc__)
-..     This function does nothing.
-.. 
-..     Arguments
-..     ----------
-..     arg1 : str
-..         The first test argument
-..     arg2 : list of str
-..         The second test argument
-.. 
-.. 
-..     Keyword Arguments
-..     -----------------
-..     kw1 : str, optional
-..         The first keyword argument Default: Test1
-..     kw2 : str, optional
-..         The second keyword argument Default: Test2
+    Arguments
+    ----------
+    arg1 : str
+        The first argument
+        
+
+    This function's argspec only contains `no_def_kw`
+
+    Keyword Arguments
+    -----------------
+    no_def_kw : int, optional
+        Keyword that gathers default from argspec Default: None
+
+Unregistered Arguments
+----------------------
+
+By default, if a positional or keyword argument is encountered in the decorated function's
+argspec that has not been registered with the :py:class:`.ArgDoc` instance a KeyError will
+be raised:
+
+.. testcode::
+
+    @arg_doc()
+    def bad_argument(badarg):
+        '''
+        This function has an unregistered argument and will raise a KeyError when decorated
+        '''
+        pass
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    Traceback (most recent call last):
+    ...
+    KeyError: 'Unregistered positional argument `badarg` encountered in argspec of
+    `<function bad_argument at ...>`'
+
+.. testcode::
+    :hide:
+
+    @arg_doc()
+    def bad_keyword(badkw=None):
+        '''
+        This function has an unregistered keyword and will raise a KeyError when decorated
+        '''
+        pass
+
+.. testoutput::
+    :hide:
+    :options: +NORMALIZE_WHITESPACE
+
+    Traceback (most recent call last):
+    ...
+    KeyError: 'Unregistered keyword argument `badkw` encountered in argspec of
+    `<function bad_keyword at ...>`'
+
+Ignoring Arguments
+------------------
+
+In the case where it is undesirable to document a specific positional or keyword argument 
+it can be ignored during the initialization of the :py:class:`.ArgDoc` instance.  To
+ignore the positional argument `ignored_arg` and the keyword argument `ignored_kw`:
+
+>>> arg_doc = ArgDoc(ignore_args=['ignored_arg'], ignore_kws=['ignored_kw'])
+>>> arg_doc.register_argument('arg1', str, 'The first argument')
+>>> arg_doc.register_argument('arg2', 'list of str', 'The second argument')
+>>> arg_doc.register_keyword('def_kw', int, 'Keyword with default defined during registration', default=1)
+>>> arg_doc.register_keyword('no_def_kw', int, 'Keyword that gathers default from argspec')
+>>> print(arg_doc.ignore_args)
+['ignored_arg']
+>>> print(arg_doc.ignore_kws)
+['ignored_kw']
+
+Decorating a function whose argspec contains ignored arguments results in those arguments
+being silently omitted from the resulting docstring:
+
+.. testcode::
+
+    @arg_doc()
+    def test_func(ignored_arg, arg1, arg2, ignored_kw=None, def_kw=None, no_def_kw=None):
+        '''
+        In this function's docstring, `ignored_arg` and `ignored_kw` will be omitted
+        '''
+        pass
+    print(test_func.__doc__)
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    In this function's docstring, `ignored_arg` and `ignored_kw` will be omitted
+
+    Arguments
+    ----------
+    arg1 : str
+        The first argument
+    arg2 : list of str
+        The second argument
+
+
+    Keyword Arguments
+    -----------------
+    def_kw : int, optional
+        Keyword with default defined during registration Default: 1
+    no_def_kw : int, optional
+        Keyword that gathers default from argspec Default: None
+
+Documenting Raised Errors
+-------------------------
+
+The errors that a function can raise cannot be determined via introspection.  To add
+documentation for the errors that a function can raise, pass them to the decorator
+via the `raises` argument:
+
+.. testcode::
+
+    raised_errors = {'KeyError': 'Raises a KeyError under all circumstances.'}
+
+    @arg_doc(raises=raised_errors)
+    def raise_key_error(arg1):
+        '''
+        Raises a KeyError
+        '''
+        raise KeyError()
+    print(raise_key_error.__doc__)
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    Raises a KeyError
+
+    Arguments
+    ----------
+    arg1 : str
+        The first argument
+
+
+    Raises
+    ------
+    KeyError
+        Raises a KeyError under all circumstances.
 
 API
 ===
