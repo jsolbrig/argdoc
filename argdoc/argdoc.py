@@ -6,7 +6,7 @@ try:
     from inspect import signature, _empty, getdoc
     from inspect import Parameter
 except ImportError:
-    from funcsig import signature, _empty
+    from funcsig import signature, _empty, getdoc
     from funcsig import Parameter
 
 from IPython import embed as shell
