@@ -1,13 +1,15 @@
 from __future__ import division, print_function, unicode_literals
+from builtins import super
 
 import sys
 import pkg_resources
+from inspect import getdoc
 try:
-    from inspect import signature, _empty, getdoc
+    from inspect import signature, _empty
     from inspect import Parameter
 except ImportError:
-    from funcsig import signature, _empty, getdoc
-    from funcsig import Parameter
+    from funcsigs import signature, _empty
+    from funcsigs import Parameter
 
 from IPython import embed as shell
 
@@ -64,7 +66,7 @@ class ArgDoc:
             self.ignore_args = ignore_args
             self.ignore_kws = ignore_kws
             self.raises = raises
-    
+
         def __call__(self, obj):
             '''
             Inspect the input object and add a "parameters" section to its docstring
@@ -121,12 +123,16 @@ class ArgDoc:
                         doc += self.__create_error_doc(ename, econd)
 
                 doc += '    \n'
-    
+
             else:
                 raise AttributeError('Object has no docstring')
-            obj.__doc__ = doc
+            try:
+                obj.__doc__ = doc
+            except AttributeError:
+                # Required for python 2.7
+                obj.__func__.__doc__ = doc
             return obj
-    
+
         def __get_argument_header(self):
             if self.form == 'numpy':
                 return '\n\nArguments\n----------\n'
@@ -173,14 +179,14 @@ class ArgDoc:
             elif self.form == 'google':
                 argstr = '    *{}: Variable length argument list.'.format(param.name)
             return argstr
-    
+
         def __create_vkeywords_doc(self, param):
             if self.form == 'numpy':
                 argstr = '**{}\n    Arbitrary keyword arguments.'.format(param.name)
             elif self.form == 'google':
                 argstr = '    **{}: Arbitrary keyword arguments.'.format(param.name)
             return argstr
-    
+
         def __create_error_doc(self, name, condition):
             if self.form == 'numpy':
                 argstr = '{}\n    {}\n'.format(name, condition)

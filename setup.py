@@ -30,7 +30,7 @@ setup(name=name,
               'project': ('setup.py', name),
               'version': ('setup.py', main_ns['__version__']),
               'source_dir': ('setup.py', 'doc')}},
-      install_requires=['sphinx', 'sphinxcontrib-programoutput'],
+      install_requires=['future', 'sphinx', 'sphinxcontrib-programoutput'],
       url='https://github.com/jsolbrig/argdoc',
       classifiers=[
           'Programming Language :: Python :: 2.7',
